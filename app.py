@@ -1,29 +1,32 @@
-import os
-os.environ['TRANSFORMERS_CACHE'] = '/tmp/transformers_cache'
-
-
 from flask import Flask, request, jsonify
-from transformers import pipeline, Conversation
-
-# Load Hugging Face chatbot pipeline
-chatbot = pipeline("conversational", model="microsoft/DialoGPT-small")
+import requests
+import os
 
 app = Flask(__name__)
 
+HF_API_TOKEN = os.getenv("HF_API_TOKEN")  # Add this in Render environment
+
+def ask_huggingface_bot(message):
+    API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
+    headers = {
+        "Authorization": f"Bearer {HF_API_TOKEN}"
+    }
+    payload = {
+        "inputs": {
+            "text": message
+        }
+    }
+    response = requests.post(API_URL, headers=headers, json=payload)
+    if response.status_code == 200:
+        return response.json()[0]["generated_text"]
+    else:
+        return "Sorry, I'm having trouble responding right now."
+
 @app.route("/chat", methods=["POST"])
 def chat():
-    user_message = request.json.get("message")
-    try:
-        conv = Conversation(user_message)
-        result = chatbot(conv)
-        reply = result.generated_responses[-1]
-        return jsonify({"response": reply})
-    except Exception:
-        return jsonify({"error": "Server error"}), 500
-
-@app.route("/", methods=["GET"])
-def home():
-    return "Chatbot Transformer Server Running"
+    user_msg = request.json.get("message", "")
+    bot_response = ask_huggingface_bot(user_msg)
+    return jsonify({"reply": bot_response})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=5000)
