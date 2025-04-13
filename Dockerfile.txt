@@ -1,0 +1,20 @@
+﻿# Use the official Rasa image from Docker Hub
+FROM rasa/rasa:latest
+
+# Set working directory in the container
+WORKDIR /app
+
+# Copy your Rasa project files to the container
+COPY . /app
+
+# Install any additional dependencies, if needed
+RUN pip install -r requirements.txt
+
+# Train the Rasa model
+RUN rasa train
+
+# Expose port 5005 (the default Rasa port)
+EXPOSE 5005
+
+# Run the Rasa server
+CMD ["rasa", "run", "--enable-api"]

@@ -1,39 +1,33 @@
-import os
-from flask import Flask, request, jsonify
 import requests
-import os
-
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-HF_API_TOKEN = os.getenv("HF_API_TOKEN")  # Add this in Render environment
+# Replace with your Render URL where Rasa is deployed
+RASA_API_URL = "https://<your-service-name>.onrender.com/webhooks/rest/webhook"
 
-def ask_huggingface_bot(message):
-    API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
-    headers = {
-        "Authorization": f"Bearer {HF_API_TOKEN}"
-    }
-    payload = {
-        "inputs": {
-            "text": message
-        }
-    }
-    response = requests.post(API_URL, headers=headers, json=payload)
+# Function to interact with Rasa API
+def ask_rasa_bot(message):
+    response = requests.post(RASA_API_URL, json={"message": message})
+    
     if response.status_code == 200:
-        return response.json()[0]["generated_text"]
+        return response.json()[0]["text"]
     else:
         return "Sorry, I'm having trouble responding right now."
 
 @app.route("/chat", methods=["POST"])
 def chat():
+    # Extract the message sent by the user
     user_msg = request.json.get("message", "")
-    bot_response = ask_huggingface_bot(user_msg)
+    
+    # Get the bot's response
+    bot_response = ask_rasa_bot(user_msg)
+    
     return jsonify({"reply": bot_response})
-
 
 @app.route("/", methods=["GET"])
 def home():
     return "Chatbot Server Running"
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    app.run(host='0.0.0.0', port=5000)
