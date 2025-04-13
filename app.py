@@ -32,7 +32,7 @@ def chat():
 
 @app.route("/", methods=["GET"])
 def home():
-    return "Chatbot Transformer Server Running"
+    return "Chatbot Server Running"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
