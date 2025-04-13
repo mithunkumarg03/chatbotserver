@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, jsonify
 import requests
 import os
@@ -28,5 +29,10 @@ def chat():
     bot_response = ask_huggingface_bot(user_msg)
     return jsonify({"reply": bot_response})
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+
+@app.route("/", methods=["GET"])
+def home():
+    return "Chatbot Transformer Server Running"
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
