@@ -1,7 +1,6 @@
 import os
+os.environ['TRANSFORMERS_CACHE'] = '/tmp/transformers_cache'
 
-# Set a safe writable cache directory
-os.environ["TRANSFORMERS_CACHE"] = "./transformers_cache"
 
 from flask import Flask, request, jsonify
 from transformers import pipeline, Conversation
