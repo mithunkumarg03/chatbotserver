@@ -2,9 +2,10 @@ import os
 from flask import Flask, request, jsonify
 import requests
 import os
+from flask_cors import CORS
 
 app = Flask(__name__)
-
+CORS(app)
 HF_API_TOKEN = os.getenv("HF_API_TOKEN")  # Add this in Render environment
 
 def ask_huggingface_bot(message):
