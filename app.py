@@ -6,37 +6,40 @@ import os
 
 app = Flask(__name__)
 
-# Provide the directory path containing tokenizer files (including tokenizer.json)
-tokenizer = PreTrainedTokenizerFast.from_pretrained("tokenizer.json")
+# Initialize tokenizer (ensure tokenizer.json is in the current directory or give full path)
+tokenizer_path = os.path.join(os.getcwd(), "tokenizer.json")
+tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
 
 # Initialize ONNX session
-ort_session = ort.InferenceSession("model.onnx")
-print("ONNX Input Names:", [i.name for i in ort_session.get_inputs()])
+onnx_model_path = os.path.join(os.getcwd(), "model.onnx")
+ort_session = ort.InferenceSession(onnx_model_path)
+
+# Print ONNX input names
+onnx_inputs = {i.name for i in ort_session.get_inputs()}
+print("ONNX Input Names:", onnx_inputs)
 
 def generate_response(prompt):
     try:
         encoding = tokenizer(prompt, return_tensors="np", padding="max_length", max_length=512, truncation=True)
-        input_ids = encoding["input_ids"]
-        attention_mask = encoding["attention_mask"]
-        token_type_ids = encoding.get("token_type_ids", np.zeros_like(input_ids))
+        input_feed = {
+            "input_ids": encoding["input_ids"],
+            "attention_mask": encoding["attention_mask"]
+        }
+
+        # Add token_type_ids if required by the model
+        if "token_type_ids" in onnx_inputs:
+            input_feed["token_type_ids"] = encoding.get("token_type_ids", np.zeros_like(encoding["input_ids"]))
 
         # Run inference with ONNX model
-        outputs = ort_session.run(
-            None,
-            {
-                "input_ids": input_ids,
-                "attention_mask": attention_mask,
-                "token_type_ids": token_type_ids
-            }
-        )
+        outputs = ort_session.run(None, input_feed)
 
-        # Assuming model returns logits of shape [1, seq_len, vocab_size]
+        # Assuming outputs[0] = logits -> shape: [1, seq_len, vocab_size]
         output_logits = outputs[0]
         token_ids = np.argmax(output_logits, axis=-1)[0]
 
-        # Decode the generated tokens
+        # Decode tokens
         response_text = tokenizer.decode(token_ids, skip_special_tokens=True)
-        return response_text
+        return response_text.strip()
 
     except Exception as e:
         import traceback
@@ -46,8 +49,10 @@ def generate_response(prompt):
 @app.route('/chat', methods=['POST'])
 def chat():
     user_input = request.json.get('message', '')
-    prompt = f"""As a medical AI assistant, provide concise, evidence-based responses.\n\nUser: {user_input}\nAssistant:"""
+    if not user_input:
+        return jsonify({"error": "Message is required"}), 400
 
+    prompt = f"""As a medical AI assistant, provide concise, evidence-based responses.\n\nUser: {user_input}\nAssistant:"""
     response = generate_response(prompt)
     return jsonify({"response": response})
 
@@ -56,4 +61,5 @@ def home():
     return "Chatbot Server Running"
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
