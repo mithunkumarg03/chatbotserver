@@ -18,11 +18,9 @@ def generate_response(prompt):
         input_ids = np.array([encoding.ids[:512]], dtype=np.int64)
         attention_mask = encoding.attention_mask or [1] * len(encoding.ids)
         attention_mask = np.array([attention_mask[:512]], dtype=np.int64)
-
-        # Add token_type_ids
         token_type_ids = np.zeros_like(input_ids, dtype=np.int64)
 
-        print("Running inference with inputs:")
+        print("Running inference with:")
         print("input_ids:", input_ids)
         print("attention_mask:", attention_mask)
         print("token_type_ids:", token_type_ids)
@@ -36,13 +34,20 @@ def generate_response(prompt):
             }
         )
 
-        print("Model output:", outputs)
-        return tokenizer.decode(outputs[0][0].tolist(), skip_special_tokens=True)
+        output_ids = outputs[0]
+        if isinstance(output_ids, list):
+            output_ids = output_ids[0]
+            if isinstance(output_ids, list):
+                output_ids = output_ids[0]
+
+        response_text = tokenizer.decode(output_ids.tolist(), skip_special_tokens=True)
+        return response_text
 
     except Exception as e:
         import traceback
         traceback.print_exc()
         return "Sorry, an error occurred while generating a response."
+
 
 
 
