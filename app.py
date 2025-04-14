@@ -6,8 +6,9 @@ import torch
 app = Flask(__name__)
 
 # Load model & tokenizer (you can change to any supported model)
-tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-small")
-model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-small")
+tokenizer = AutoTokenizer.from_pretrained("distilgpt2")
+model = AutoModelForCausalLM.from_pretrained("distilgpt2")
+
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -20,6 +21,10 @@ def chat():
     response = tokenizer.decode(outputs[:, inputs.shape[-1]:][0], skip_special_tokens=True)
 
     return jsonify({"response": response})
+
+@app.route("/", methods=["GET"])
+def home():
+    return "Chatbot Server Running"
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
