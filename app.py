@@ -1,26 +1,27 @@
-from transformers import PreTrainedTokenizerFast
+from transformers import AutoTokenizer
 import onnxruntime as ort
 import numpy as np
 from flask import Flask, request, jsonify
 import os
+import traceback
 
 app = Flask(__name__)
 
-# Initialize tokenizer (ensure tokenizer.json is in the current directory or give full path)
-tokenizer_path = os.path.join(os.getcwd(), "tokenizer.json")
-tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
+# Load tokenizer directly from HuggingFace Hub
+tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")  # 🔁 Change if you used another model
 
-# Initialize ONNX session
+# Load ONNX model
 onnx_model_path = os.path.join(os.getcwd(), "model.onnx")
 ort_session = ort.InferenceSession(onnx_model_path)
 
-# Print ONNX input names
+# Get ONNX input names
 onnx_inputs = {i.name for i in ort_session.get_inputs()}
 print("ONNX Input Names:", onnx_inputs)
 
 def generate_response(prompt):
     try:
         encoding = tokenizer(prompt, return_tensors="np", padding="max_length", max_length=512, truncation=True)
+
         input_feed = {
             "input_ids": encoding["input_ids"],
             "attention_mask": encoding["attention_mask"]
@@ -30,21 +31,16 @@ def generate_response(prompt):
             input_feed["token_type_ids"] = encoding.get("token_type_ids", np.zeros_like(encoding["input_ids"]))
 
         outputs = ort_session.run(None, input_feed)
-        output_logits = outputs[0]
-        token_ids = np.argmax(output_logits, axis=-1)[0]
 
-        # Convert IDs to tokens
-        tokens = tokenizer.convert_ids_to_tokens(token_ids)
-        clean_tokens = [t for t in tokens if not t.startswith('[unused') and t not in ['[PAD]', '[CLS]', '[SEP]', '[MASK]']]
-        response_text = tokenizer.convert_tokens_to_string(clean_tokens)
+        logits = outputs[0]  # shape: [1, seq_len, vocab_size]
+        token_ids = np.argmax(logits, axis=-1)[0]
 
-        return response_text.strip()
+        response = tokenizer.decode(token_ids, skip_special_tokens=True)
+        return response.strip()
 
     except Exception as e:
-        import traceback
         traceback.print_exc()
         return "Sorry, an error occurred while generating a response."
-
 
 @app.route('/chat', methods=['POST'])
 def chat():
