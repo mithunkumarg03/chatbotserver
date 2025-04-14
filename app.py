@@ -22,6 +22,8 @@ def generate_response(prompt):
                 "attention_mask": attention_mask
             }
         )
+        print("ONNX input names:", [i.name for i in ort_session.get_inputs()])
+
 
         return tokenizer.decode(outputs[0][0].tolist(), skip_special_tokens=True)
     except Exception as e:
