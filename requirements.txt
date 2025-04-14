@@ -4,3 +4,4 @@ tokenizers==0.14.1
 numpy==1.26.0
 gunicorn==21.2.0
 protobuf==4.25.1
+transformers
