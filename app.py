@@ -14,16 +14,9 @@ print("ONNX Input Names:", [i.name for i in ort_session.get_inputs()])
 def generate_response(prompt):
     try:
         encoding = tokenizer.encode(prompt)
-
         input_ids = np.array([encoding.ids[:512]], dtype=np.int64)
-        attention_mask = encoding.attention_mask or [1] * len(encoding.ids)
-        attention_mask = np.array([attention_mask[:512]], dtype=np.int64)
+        attention_mask = np.array([encoding.attention_mask[:512]], dtype=np.int64)
         token_type_ids = np.zeros_like(input_ids, dtype=np.int64)
-
-        print("Running inference with:")
-        print("input_ids:", input_ids)
-        print("attention_mask:", attention_mask)
-        print("token_type_ids:", token_type_ids)
 
         outputs = ort_session.run(
             None,
@@ -34,20 +27,17 @@ def generate_response(prompt):
             }
         )
 
-        output_ids = outputs[0]
-        if isinstance(output_ids, list):
-            output_ids = output_ids[0]
-            if isinstance(output_ids, list):
-                output_ids = output_ids[0]
+        # Assuming output is logits (shape: [1, seq_len, vocab_size])
+        output_logits = outputs[0]
+        token_ids = np.argmax(output_logits, axis=-1)[0]  # Get the predicted token ids
 
-        response_text = tokenizer.decode(output_ids.tolist(), skip_special_tokens=True)
+        response_text = tokenizer.decode(token_ids.tolist())
         return response_text
 
     except Exception as e:
         import traceback
         traceback.print_exc()
         return "Sorry, an error occurred while generating a response."
-
 
 
 
