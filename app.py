@@ -10,19 +10,23 @@ tokenizer = Tokenizer.from_file("tokenizer.json")
 ort_session = ort.InferenceSession("model.onnx")
 
 def generate_response(prompt):
-    encoding = tokenizer.encode(prompt)
-    input_ids = np.array([encoding.ids[:512]], dtype=np.int64)
-    attention_mask = np.array([encoding.attention_mask[:512]], dtype=np.int64)
+    try:
+        encoding = tokenizer.encode(prompt)
+        input_ids = np.array([encoding.ids[:512]], dtype=np.int64)
+        attention_mask = np.array([encoding.attention_mask[:512]], dtype=np.int64)
 
-    outputs = ort_session.run(
-        None,
-        {
-            "input_ids": input_ids,
-            "attention_mask": attention_mask
-        }
-    )
+        outputs = ort_session.run(
+            None,
+            {
+                "input_ids": input_ids,
+                "attention_mask": attention_mask
+            }
+        )
 
-    return tokenizer.decode(outputs[0][0].tolist(), skip_special_tokens=True)
+        return tokenizer.decode(outputs[0][0].tolist(), skip_special_tokens=True)
+    except Exception as e:
+        print("Error during inference:", str(e))
+        return "Sorry, an error occurred while generating a response."
 
 @app.route('/chat', methods=['POST'])
 def chat():
