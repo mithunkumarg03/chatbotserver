@@ -1,35 +1,27 @@
 #!/bin/bash
-# Health Chatbot Model Downloader
-# Uses curl with retries and checksum verification
+# Health Chatbot Model Downloader (Robust Version)
+# Save this EXACTLY as shown (don't copy-paste from browsers)
 
-set -e  # Exit immediately if any command fails
+set -euo pipefail  # Strict error handling
 
 MODEL_URL="https://huggingface.co/optimum/distilbert-base-uncased/resolve/main/model.onnx"
 TOKENIZER_URL="https://huggingface.co/optimum/distilbert-base-uncased/resolve/main/tokenizer.json"
 
 echo "⬇️ Downloading model files..."
-
-# Download with retries
-for url in $MODEL_URL $TOKENIZER_URL; do
-    filename=$(basename $url)
-    for i in {1..3}; do
-        if curl -L -o $filename $url; then
-            echo "✅ Downloaded $filename"
-            break
-        else
-            echo "❌ Attempt $i failed, retrying..."
-            sleep 2
-            rm -f $filename
-        fi
-    done
-done
-
-# Verify files exist
-if [[ ! -f "model.onnx" || ! -f "tokenizer.json" ]]; then
-    echo "❌ Critical Error: Missing model files!"
+if ! curl -L -o model.onnx "$MODEL_URL"; then
+    echo "❌ Model download failed" >&2
     exit 1
 fi
 
-# Basic validation
+if ! curl -L -o tokenizer.json "$TOKENIZER_URL"; then
+    echo "❌ Tokenizer download failed" >&2
+    exit 1
+fi
+
 echo "🔍 Verifying files..."
-file model.onnx | grep -q "ONNX" || { echo
+file model.onnx | grep -q "ONNX" || { echo "❌ Invalid ONNX file" >&2; exit 1; }
+file tokenizer.json | grep -q "JSON" || { echo "❌ Invalid JSON file" >&2; exit 1; }
+
+echo -e "\n✅ Success! Downloaded:"
+ls -lh model.onnx tokenizer.json
+exit 0
