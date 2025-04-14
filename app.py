@@ -14,32 +14,29 @@ print("ONNX Input Names:", [i.name for i in ort_session.get_inputs()])
 def generate_response(prompt):
     try:
         encoding = tokenizer.encode(prompt)
+
         input_ids = np.array([encoding.ids[:512]], dtype=np.int64)
+        attention_mask = encoding.attention_mask or [1] * len(encoding.ids)
+        attention_mask = np.array([attention_mask[:512]], dtype=np.int64)
 
-        # Fix for missing attention_mask
-        attention = encoding.attention_mask
-        if attention is None:
-            attention = [1] * len(encoding.ids)
-        attention_mask = np.array([attention[:512]], dtype=np.int64)
+        # Add token_type_ids = all 0s (default for single sequence)
+        token_type_ids = np.zeros_like(input_ids, dtype=np.int64)
 
-        # Print for debug (optional)
-        print("Input IDs:", input_ids)
-        print("Attention Mask:", attention_mask)
-
-        # Use actual model input names (update once you know)
         outputs = ort_session.run(
             None,
             {
-                "input_ids": input_ids,  # update if your model uses a different name
-                "attention_mask": attention_mask
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "token_type_ids": token_type_ids
             }
         )
 
         return tokenizer.decode(outputs[0][0].tolist(), skip_special_tokens=True)
 
     except Exception as e:
-        print("Error during inference:", str(e))  # critical for logs
+        print("Error during inference:", str(e))
         return "Sorry, an error occurred while generating a response."
+
 
 
 @app.route('/chat', methods=['POST'])
