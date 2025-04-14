@@ -6,7 +6,7 @@ import os
 
 app = Flask(__name__)
 
-# Load tokenizer from a tokenizer.json file
+# Provide the directory path containing tokenizer files (including tokenizer.json)
 tokenizer = PreTrainedTokenizerFast.from_pretrained("tokenizer.json")
 
 # Initialize ONNX session
