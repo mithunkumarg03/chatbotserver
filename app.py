@@ -19,8 +19,13 @@ def generate_response(prompt):
         attention_mask = encoding.attention_mask or [1] * len(encoding.ids)
         attention_mask = np.array([attention_mask[:512]], dtype=np.int64)
 
-        # Add token_type_ids = all 0s (default for single sequence)
+        # Add token_type_ids
         token_type_ids = np.zeros_like(input_ids, dtype=np.int64)
+
+        print("Running inference with inputs:")
+        print("input_ids:", input_ids)
+        print("attention_mask:", attention_mask)
+        print("token_type_ids:", token_type_ids)
 
         outputs = ort_session.run(
             None,
@@ -31,11 +36,14 @@ def generate_response(prompt):
             }
         )
 
+        print("Model output:", outputs)
         return tokenizer.decode(outputs[0][0].tolist(), skip_special_tokens=True)
 
     except Exception as e:
-        print("Error during inference:", str(e))
+        import traceback
+        traceback.print_exc()
         return "Sorry, an error occurred while generating a response."
+
 
 
 
