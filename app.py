@@ -26,25 +26,25 @@ def generate_response(prompt):
             "attention_mask": encoding["attention_mask"]
         }
 
-        # Add token_type_ids if required by the model
         if "token_type_ids" in onnx_inputs:
             input_feed["token_type_ids"] = encoding.get("token_type_ids", np.zeros_like(encoding["input_ids"]))
 
-        # Run inference with ONNX model
         outputs = ort_session.run(None, input_feed)
-
-        # Assuming outputs[0] = logits -> shape: [1, seq_len, vocab_size]
         output_logits = outputs[0]
         token_ids = np.argmax(output_logits, axis=-1)[0]
 
-        # Decode tokens
-        response_text = tokenizer.decode(token_ids, skip_special_tokens=True)
+        # Convert IDs to tokens
+        tokens = tokenizer.convert_ids_to_tokens(token_ids)
+        clean_tokens = [t for t in tokens if not t.startswith('[unused') and t not in ['[PAD]', '[CLS]', '[SEP]', '[MASK]']]
+        response_text = tokenizer.convert_tokens_to_string(clean_tokens)
+
         return response_text.strip()
 
     except Exception as e:
         import traceback
         traceback.print_exc()
         return "Sorry, an error occurred while generating a response."
+
 
 @app.route('/chat', methods=['POST'])
 def chat():
