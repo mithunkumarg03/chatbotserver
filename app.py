@@ -8,7 +8,7 @@ app = Flask(__name__)
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 # Load Chat-Bison model
-model = genai.GenerativeModel("gemini-pro")
+model = genai.GenerativeModel("gemini-2.0-flash")
 
 @app.route('/chat', methods=['POST'])
 def chat():
