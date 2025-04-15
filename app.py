@@ -1,30 +1,32 @@
-# chatbot_app.py
 from flask import Flask, request, jsonify
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import torch
+import google.generativeai as genai
+import os
 
 app = Flask(__name__)
 
-# Load model & tokenizer (you can change to any supported model)
-tokenizer = AutoTokenizer.from_pretrained("distilgpt2")
-model = AutoModelForCausalLM.from_pretrained("distilgpt2")
+# Set up API key
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
+# Load Chat-Bison model
+model = genai.GenerativeModel("chat-bison")
 
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.get_json()
-    user_input = data.get("message", "")
+    message = data.get("message", "")
+    
+    if not message:
+        return jsonify({"response": "No message received."}), 400
 
-    # Encode user input & generate response
-    inputs = tokenizer.encode(user_input + tokenizer.eos_token, return_tensors="pt")
-    outputs = model.generate(inputs, max_length=1000, pad_token_id=tokenizer.eos_token_id)
-    response = tokenizer.decode(outputs[:, inputs.shape[-1]:][0], skip_special_tokens=True)
+    try:
+        response = model.generate_content(message)
+        return jsonify({"response": response.text})
+    except Exception as e:
+        return jsonify({"response": f"Error: {str(e)}"}), 500
 
-    return jsonify({"response": response})
-
-@app.route("/", methods=["GET"])
+@app.route('/')
 def home():
-    return "Chatbot Server Running"
+    return 'Chatbot backend is running.'
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
