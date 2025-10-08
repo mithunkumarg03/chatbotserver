@@ -6,11 +6,10 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)  # Allow all origins for now (okay for dev)
 
-
 # Set up API key
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-# Load Chat-Bison model
+# Load Chat-Bison (Gemini) model
 model = genai.GenerativeModel("gemini-2.0-flash")
 
 @app.route('/chat', methods=['POST'])
@@ -19,13 +18,13 @@ def chat():
     message = data.get("message", "")
     
     if not message:
-        return jsonify({"response": "No message received."}), 400
+        return jsonify({"reply": "No message received."}), 400
 
     try:
         response = model.generate_content(message)
-        return jsonify({"response": response.text})
+        return jsonify({"reply": response.text})
     except Exception as e:
-        return jsonify({"response": f"Error: {str(e)}"}), 500
+        return jsonify({"reply": f"Error: {str(e)}"}), 500
 
 @app.route('/')
 def home():
