@@ -1,3 +1,7 @@
-Flask
-google-generativeai
+flask
 flask-cors
+flask-jwt-extended
+pymongo
+google-generativeai
+gunicorn
+python-dotenv
