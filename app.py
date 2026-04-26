@@ -10,7 +10,7 @@ CORS(app)  # Allow all origins for now (okay for dev)
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 # Load Chat-Bison (Gemini) model
-model = genai.GenerativeModel("gemini-2.0-flash")
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 @app.route('/chat', methods=['POST'])
 def chat():
