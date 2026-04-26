@@ -6,3 +6,4 @@ google-generativeai
 gunicorn
 python-dotenv
 datetime
+requests
