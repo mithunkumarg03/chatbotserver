@@ -16,7 +16,7 @@ def chat():
         message = data.get("message", "")
 
         if not message:
-            return jsonify({"reply": "No message received."}), 400
+            return jsonify({"reply": "No message received"}), 400
 
         response = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
@@ -25,7 +25,7 @@ def chat():
                 "Content-Type": "application/json"
             },
             json={
-                "model": "llama3-8b-8192",   # 🔥 fast + free
+                "model": "llama3-8b-8192",
                 "messages": [
                     {"role": "user", "content": message}
                 ]
@@ -34,15 +34,21 @@ def chat():
 
         result = response.json()
 
-        # 🔥 extract reply safely
-        reply = result["choices"][0]["message"]["content"]
+        print("FULL GROQ RESPONSE:", result)   # 🔥 DEBUG
+
+        # ✅ SAFE EXTRACTION
+        if "choices" in result:
+            reply = result["choices"][0]["message"]["content"]
+        else:
+            return jsonify({
+                "reply": f"Groq error: {result}"
+            }), 200
 
         return jsonify({"reply": reply})
 
     except Exception as e:
         print("ERROR:", e)
         return jsonify({"reply": "Server error"}), 500
-
 
 @app.route('/')
 def home():
